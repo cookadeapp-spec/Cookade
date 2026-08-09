@@ -76,6 +76,11 @@ const T = {
     /* Cooking mode */
     cooking_step: "Étape", cooking_of: "sur", cooking_done: "Bon appétit ! 🎉",
     cooking_finish: "Terminer", cooking_prev: "Préc.", cooking_next: "Suiv.",
+    cooking_rate: "Tu as aimé cette recette ?",
+    cooking_photo: "📸 Photo de mon plat",
+    cooking_photo_done: "Photo ajoutée !",
+    cooking_share_result: "Partager la recette",
+    cooking_again: "Cuisiner autre chose",
     /* Shopping list */
     shopping_title: "Liste de courses",
     shopping_sub: "Ce qu'il te manque pour cette recette.",
@@ -158,10 +163,42 @@ async function loadData(k,fb){try{const v=localStorage.getItem(k);return v?JSON.
 async function saveData(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}}
 
 /* ─── Cooking Mode ─── */
-function CookingMode({ recipe, t, isRtl, onClose }) {
+function StepIllustration({ text }) {
+  const w = text.toLowerCase();
+  let id = "chef";
+  if (/coup|tranch|éminc|hach|cut|chop|dice|slice|قطع|corta/.test(w)) id = "cut";
+  else if (/mélang|fouett|remu|batt|mix|whisk|stir|blend|اخلط|mezcl/.test(w)) id = "mix";
+  else if (/four|enfour|oven|horno|فرن|gratin/.test(w)) id = "oven";
+  else if (/cuir|chauff|reveni|frire|poêl|saut|cook|heat|fry|sear|pan|cocin|اطبخ|اقلي/.test(w)) id = "pan";
+  else if (/bouill|frémi|simmer|boil|herv|اغلي/.test(w)) id = "boil";
+  else if (/repos|refroid|laiss|rest|cool|chill|reposa|اترك/.test(w)) id = "rest";
+  else if (/serv|dress|plate|serve|sirv|قدم/.test(w)) id = "serve";
+  else if (/vers|ajout|pour|add|añad|أضف/.test(w)) id = "pour";
+  else if (/assaisonn|sel|poivr|season|salt|pepper|sal|ملح/.test(w)) id = "season";
+  else if (/lav|rinc|wash|rinse|اغسل/.test(w)) id = "wash";
+  const P="#2D4A3E",A="#E8A838",G="#5A9E6F",S="#A8C5B2";
+  const svgs = {
+    cut: <svg viewBox="0 0 80 80" width="64" height="64" fill="none"><rect x="12" y="44" width="48" height="8" rx="2" fill={G} opacity="0.3"/><rect x="16" y="48" width="8" height="6" rx="1" fill={A}/><rect x="28" y="48" width="6" height="6" rx="1" fill={A}/><rect x="38" y="48" width="6" height="6" rx="1" fill={A}/><path d="M52 18L18 46" stroke={P} strokeWidth="3" strokeLinecap="round"/><path d="M52 18L58 16L56 22Z" fill={P}/></svg>,
+    mix: <svg viewBox="0 0 80 80" width="64" height="64" fill="none"><ellipse cx="40" cy="52" rx="22" ry="14" fill={S} opacity="0.4"/><ellipse cx="40" cy="48" rx="22" ry="14" stroke={P} strokeWidth="2.5" fill="none"/><path d="M40 14V38" stroke={P} strokeWidth="2.5" strokeLinecap="round"/><path d="M34 18C34 18 37 24 40 24C43 24 46 18 46 18" stroke={P} strokeWidth="2" strokeLinecap="round"/><circle cx="30" cy="44" r="2" fill={A}/><circle cx="46" cy="42" r="1.5" fill={A} opacity="0.7"/></svg>,
+    oven: <svg viewBox="0 0 80 80" width="64" height="64" fill="none"><rect x="14" y="22" width="52" height="42" rx="6" stroke={P} strokeWidth="2.5" fill="none"/><rect x="20" y="36" width="40" height="22" rx="3" fill={S} opacity="0.3"/><circle cx="28" cy="29" r="3" fill={A}/><circle cx="40" cy="29" r="3" fill={A} opacity="0.6"/><circle cx="52" cy="29" r="3" fill={G} opacity="0.5"/><path d="M30 20C30 16 34 12 34 12" stroke={A} strokeWidth="1.5" strokeLinecap="round" opacity="0.5"/><path d="M40 20C40 16 44 10 44 10" stroke={A} strokeWidth="1.5" strokeLinecap="round" opacity="0.4"/></svg>,
+    pan: <svg viewBox="0 0 80 80" width="64" height="64" fill="none"><ellipse cx="36" cy="48" rx="22" ry="12" fill={S} opacity="0.3"/><ellipse cx="36" cy="44" rx="22" ry="12" stroke={P} strokeWidth="2.5" fill="none"/><line x1="56" y1="44" x2="74" y2="38" stroke={P} strokeWidth="3" strokeLinecap="round"/><path d="M24 40C26 36 28 34 28 34" stroke={A} strokeWidth="1.5" strokeLinecap="round" opacity="0.7"/><path d="M34 38C36 34 38 32 38 32" stroke={A} strokeWidth="1.5" strokeLinecap="round" opacity="0.5"/><path d="M44 40C46 36 48 34 48 34" stroke={A} strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/></svg>,
+    boil: <svg viewBox="0 0 80 80" width="64" height="64" fill="none"><path d="M16 40C16 40 16 60 40 60C64 60 64 40 64 40" stroke={P} strokeWidth="2.5" fill="none"/><line x1="16" y1="40" x2="64" y2="40" stroke={P} strokeWidth="2.5"/><path d="M26 36C26 30 30 26 30 26" stroke={S} strokeWidth="2" strokeLinecap="round"/><path d="M40 34C40 28 44 22 44 22" stroke={G} strokeWidth="2" strokeLinecap="round"/><path d="M54 36C54 30 58 26 58 26" stroke={S} strokeWidth="2" strokeLinecap="round"/></svg>,
+    rest: <svg viewBox="0 0 80 80" width="64" height="64" fill="none"><rect x="20" y="34" width="40" height="24" rx="4" fill={S} opacity="0.2"/><rect x="20" y="34" width="40" height="24" rx="4" stroke={P} strokeWidth="2" fill="none"/><text x="33" y="51" fontFamily="serif" fontSize="16" fill={P} fontWeight="bold">z z</text><path d="M54 20L58 16" stroke={A} strokeWidth="2" strokeLinecap="round"/><path d="M58 24L64 22" stroke={A} strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/></svg>,
+    serve: <svg viewBox="0 0 80 80" width="64" height="64" fill="none"><ellipse cx="40" cy="54" rx="26" ry="8" fill={S} opacity="0.3"/><ellipse cx="40" cy="52" rx="26" ry="8" stroke={P} strokeWidth="2.5" fill="none"/><path d="M14 52C14 52 14 28 40 20C66 28 66 52 66 52" stroke={P} strokeWidth="2" fill="none" strokeDasharray="4 3"/><circle cx="40" cy="36" r="4" fill={A}/><circle cx="32" cy="42" r="2" fill={G} opacity="0.5"/></svg>,
+    pour: <svg viewBox="0 0 80 80" width="64" height="64" fill="none"><rect x="24" y="38" width="32" height="26" rx="4" fill={S} opacity="0.2"/><rect x="24" y="38" width="32" height="26" rx="4" stroke={P} strokeWidth="2" fill="none"/><path d="M48 20L48 38" stroke={A} strokeWidth="3" strokeLinecap="round" strokeDasharray="4 4"/><path d="M44 14L48 20L52 14" fill={A} opacity="0.5"/></svg>,
+    season: <svg viewBox="0 0 80 80" width="64" height="64" fill="none"><rect x="32" y="16" width="16" height="32" rx="6" fill={S} opacity="0.3"/><rect x="32" y="16" width="16" height="32" rx="6" stroke={P} strokeWidth="2" fill="none"/><circle cx="37" cy="28" r="1.5" fill={P}/><circle cx="43" cy="26" r="1.5" fill={P}/><circle cx="40" cy="32" r="1.5" fill={P}/><line x1="32" y1="22" x2="48" y2="22" stroke={P} strokeWidth="1.5"/><circle cx="36" cy="56" r="2" fill={P} opacity="0.3"/><circle cx="42" cy="58" r="1.5" fill={P} opacity="0.2"/></svg>,
+    wash: <svg viewBox="0 0 80 80" width="64" height="64" fill="none"><path d="M30 22C30 22 32 14 40 14C48 14 50 22 50 22" stroke={P} strokeWidth="2" fill="none"/><path d="M28 22L28 30L52 30L52 22" stroke={G} strokeWidth="2" fill="none"/><path d="M26 34C30 42 34 48 40 52C46 48 50 42 54 34" stroke={S} strokeWidth="2" fill="none"/><circle cx="34" cy="40" r="2" fill="#7CB9E8" opacity="0.5"/><circle cx="44" cy="38" r="2.5" fill="#7CB9E8" opacity="0.4"/></svg>,
+    chef: <svg viewBox="0 0 80 80" width="64" height="64" fill="none"><circle cx="40" cy="30" r="16" fill={S} opacity="0.3"/><circle cx="40" cy="30" r="16" stroke={P} strokeWidth="2" fill="none"/><circle cx="30" cy="22" r="8" fill="#fff" stroke={P} strokeWidth="1.5"/><circle cx="50" cy="22" r="8" fill="#fff" stroke={P} strokeWidth="1.5"/><circle cx="40" cy="18" r="9" fill="#fff" stroke={P} strokeWidth="1.5"/><rect x="30" y="44" width="20" height="20" rx="3" stroke={P} strokeWidth="2" fill="none"/><line x1="30" y1="50" x2="50" y2="50" stroke={A} strokeWidth="1.5"/><circle cx="40" cy="58" r="2" fill={A}/></svg>,
+  };
+  return svgs[id] || svgs.chef;
+}
+
+function CookingMode({ recipe, t, isRtl, onClose, onShare, onCookAgain }) {
   const [step, setStep] = useState(0);
   const [timerActive, setTimerActive] = useState(false);
   const [timerLeft, setTimerLeft] = useState(0);
+  const [doneRating, setDoneRating] = useState(0);
+  const [photoTaken, setPhotoTaken] = useState(false);
   const steps = recipe.steps || [];
   const total = steps.length;
   const done = step >= total;
@@ -194,7 +231,10 @@ function CookingMode({ recipe, t, isRtl, onClose }) {
       {/* Step content */}
       <div style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"32px 28px",textAlign:"center" }}>
         {!done ? (<>
-          <span style={{ fontSize:13,fontWeight:700,textTransform:"uppercase",letterSpacing:1.5,color:"#E8A838",marginBottom:16 }}>
+          <div style={{ width:88,height:88,borderRadius:24,background:"linear-gradient(135deg,#EDF5F0,#D8EBDE)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:20 }}>
+            <StepIllustration text={steps[step]}/>
+          </div>
+          <span style={{ fontSize:13,fontWeight:700,textTransform:"uppercase",letterSpacing:1.5,color:"#E8A838",marginBottom:12 }}>
             {t.cooking_step} {step+1} {t.cooking_of} {total}
           </span>
           <p style={{ fontSize:22,color:"#2C2C2C",lineHeight:1.6,fontFamily:"'DM Serif Display',Georgia,serif",maxWidth:400 }}>
@@ -226,9 +266,33 @@ function CookingMode({ recipe, t, isRtl, onClose }) {
             </div>
           )}
         </>) : (
-          <div>
-            <span style={{ fontSize:64,display:"block",marginBottom:16 }}>👨‍🍳</span>
-            <h2 style={{ fontFamily:"'DM Serif Display',Georgia,serif",fontSize:28,color:"#2C2C2C" }}>{t.cooking_done}</h2>
+          <div style={{width:"100%",maxWidth:360}}>
+            <span style={{ fontSize:64,display:"block",marginBottom:12,textAlign:"center" }}>👨‍🍳</span>
+            <h2 style={{ fontFamily:"'DM Serif Display',Georgia,serif",fontSize:28,color:"#2C2C2C",textAlign:"center",marginBottom:24 }}>{t.cooking_done}</h2>
+
+            {/* Rate */}
+            <p style={{fontSize:15,fontWeight:600,color:"#2C2C2C",textAlign:"center",marginBottom:12}}>{t.cooking_rate||"Tu as aimé cette recette ?"}</p>
+            <div style={{display:"flex",gap:6,justifyContent:"center",marginBottom:24}}>
+              {[1,2,3,4,5].map(n=>(<button key={n} onClick={()=>setDoneRating(n)} style={{background:"none",border:"none",cursor:"pointer",padding:4,fontSize:28,filter:n<=doneRating?"none":"grayscale(1) opacity(0.35)",transform:n<=doneRating?"scale(1.1)":"scale(1)",transition:"all 0.15s"}}>👨‍🍳</button>))}
+            </div>
+
+            {/* Photo */}
+            <div style={{position:"relative",marginBottom:12}}>
+              <button style={{width:"100%",padding:"14px",borderRadius:12,border:"1px solid #E0DDD6",background:photoTaken?"#EDF5F0":"#fff",color:"#2D4A3E",fontSize:14,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+                {photoTaken ? (t.cooking_photo_done||"Photo ajoutée !") : (t.cooking_photo||"📸 Photo de mon plat")}
+              </button>
+              {!photoTaken&&<input type="file" accept="image/*" onChange={()=>setPhotoTaken(true)} style={{position:"absolute",inset:0,width:"100%",height:"100%",opacity:0,cursor:"pointer",zIndex:2}}/>}
+            </div>
+
+            {/* Share */}
+            <button onClick={()=>onShare(recipe)} style={{width:"100%",padding:"14px",borderRadius:12,border:"1px solid #E0DDD6",background:"#fff",color:"#2D4A3E",fontSize:14,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:12}}>
+              <Share2 size={16}/> {t.cooking_share_result||"Partager la recette"}
+            </button>
+
+            {/* Cook again */}
+            <button onClick={()=>{if(doneRating>0)track("recipe_rated",{rating:doneRating,recipe:recipe.name});onCookAgain();}} style={{width:"100%",padding:"14px",borderRadius:12,border:"none",background:"linear-gradient(135deg,#E8A838,#D4953A)",color:"#fff",fontSize:15,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+              <Utensils size={16}/> {t.cooking_again||"Cuisiner autre chose"}
+            </button>
           </div>
         )}
       </div>
@@ -458,7 +522,7 @@ export default function Cookade() {
       <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
       <style>{`@keyframes fadeIn{from{opacity:0;transform:translateX(-50%) translateY(-10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}`}</style>
 
-      {cookingRecipe&&<CookingMode recipe={cookingRecipe} t={t} isRtl={isRtl} onClose={()=>setCookingRecipe(null)}/>}
+      {cookingRecipe&&<CookingMode recipe={cookingRecipe} t={t} isRtl={isRtl} onClose={()=>setCookingRecipe(null)} onShare={shareRecipe} onCookAgain={()=>{setCookingRecipe(null);reset();}}/>}
       {showSurvey&&<SurveyModal t={t} isRtl={isRtl} onClose={()=>{track("survey_dismissed");setShowSurvey(false);}} onComplete={(r)=>{setSurveyDone(true);setSurveyResponses(p=>[...p,r]);setShowSurvey(false);showToast(t.survey_thanks);}}/>}
       {toast&&<div style={{position:"fixed",top:20,left:"50%",transform:"translateX(-50%)",zIndex:100,background:"#2D4A3E",color:"#fff",padding:"12px 24px",borderRadius:12,fontSize:14,fontWeight:500,boxShadow:"0 8px 32px rgba(0,0,0,0.2)",animation:"fadeIn 0.3s ease",whiteSpace:"nowrap",zIndex:80}}>{toast}</div>}
 
